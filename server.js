@@ -1,18 +1,26 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const app = express();
 const port = 3000;
 
 app.use(express.json());
 
-let users = [
-    { username: 'user1', password: 'password1', icon: '', posts: ['Hello World!'] },
-    { username: 'user2', password: 'password2', icon: '', posts: ['My first post!'] }
-];
+// MongoDB Atlas connection
+mongoose.connect('your_mongodb_atlas_connection_string', { useNewUrlParser: true, useUnifiedTopology: true });
+
+const userSchema = new mongoose.Schema({
+    username: String,
+    password: String,
+    icon: String,
+    posts: [String]
+});
+
+const User = mongoose.model('User', userSchema);
 
 // ユーザープロフィールを取得するエンドポイント
-app.get('/user/:username', (req, res) => {
+app.get('/user/:username', async (req, res) => {
     const username = req.params.username;
-    const user = users.find(user => user.username === username);
+    const user = await User.findOne({ username }).exec();
     if (user) {
         res.json({ username: user.username, icon: user.icon });
     } else {
@@ -21,9 +29,9 @@ app.get('/user/:username', (req, res) => {
 });
 
 // ユーザーポストを取得するエンドポイント
-app.get('/user/:username/posts', (req, res) => {
+app.get('/user/:username/posts', async (req, res) => {
     const username = req.params.username;
-    const user = users.find(user => user.username === username);
+    const user = await User.findOne({ username }).exec();
     if (user) {
         res.json(user.posts);
     } else {
@@ -32,12 +40,13 @@ app.get('/user/:username/posts', (req, res) => {
 });
 
 // 新しい投稿を作成するエンドポイント
-app.post('/user/:username/posts', (req, res) => {
+app.post('/user/:username/posts', async (req, res) => {
     const username = req.params.username;
     const postContent = req.body.content;
-    const user = users.find(user => user.username === username);
+    const user = await User.findOne({ username }).exec();
     if (user && postContent) {
         user.posts.push(postContent);
+        await user.save();
         res.status(201).send('Post created');
     } else {
         res.status(400).send('Bad request');

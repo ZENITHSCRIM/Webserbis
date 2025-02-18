@@ -32,6 +32,9 @@
             <input type="file" id="fileInput" class="input">
             <button onclick="sendPost()" class="btn">投稿</button>
             <div class="timeline" id="timeline"></div>
+            <input type="text" id="searchUserInput" class="input" placeholder="ユーザー名を検索">
+            <button onclick="viewUserPosts()" class="btn">検索</button>
+            <div id="userPosts"></div>
         </div>
 
         <div id="settings" class="tab-content">
@@ -212,6 +215,24 @@
 
         function getLoggedInUser() {
             return JSON.parse(localStorage.getItem('loggedInUser'));
+        }
+
+        function viewUserPosts() {
+            let username = document.getElementById('searchUserInput').value;
+            if (!username) return alert("ユーザー名を入力してください。");
+            fetch(`/user/${username}/posts`)
+                .then(response => response.json())
+                .then(posts => {
+                    let userPostsDiv = document.getElementById('userPosts');
+                    userPostsDiv.innerHTML = '';
+                    posts.forEach(post => {
+                        let postDiv = document.createElement('div');
+                        postDiv.className = 'post';
+                        postDiv.innerHTML = `<p>${post}</p>`;
+                        userPostsDiv.appendChild(postDiv);
+                    });
+                })
+                .catch(error => alert('ユーザーが見つかりません'));
         }
     </script>
 </body>

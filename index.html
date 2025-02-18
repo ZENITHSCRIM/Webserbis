@@ -126,6 +126,64 @@
                 document.body.style.background = settings.themeColor;
             }
         }
+
+        function registerAccount() {
+            let username = document.getElementById('username').value;
+            let password = document.getElementById('password').value;
+
+            if (!username || !password) {
+                return alert("ユーザー名とパスワードを入力してください。");
+            }
+
+            // ユーザー情報を保存する処理（例: ローカルストレージ）
+            let users = JSON.parse(localStorage.getItem('users') || '[]');
+            if (users.find(user => user.username === username)) {
+                return alert("このユーザー名は既に登録されています。");
+            }
+
+            users.push({ username, password });
+            localStorage.setItem('users', JSON.stringify(users));
+            alert("アカウントを登録しました！");
+            checkLoginStatus();
+        }
+
+        function login() {
+            let username = document.getElementById('username').value;
+            let password = document.getElementById('password').value;
+
+            if (!username || !password) {
+                return alert("ユーザー名とパスワードを入力してください。");
+            }
+
+            // ユーザー情報を確認する処理（例: ローカルストレージ）
+            let users = JSON.parse(localStorage.getItem('users') || '[]');
+            let user = users.find(user => user.username === username && user.password === password);
+
+            if (!user) {
+                return alert("ユーザー名またはパスワードが間違っています。");
+            }
+
+            localStorage.setItem('loggedInUser', JSON.stringify(user));
+            alert("ログインしました！");
+            checkLoginStatus();
+        }
+
+        function checkLoginStatus() {
+            let loggedInUser = JSON.parse(localStorage.getItem('loggedInUser'));
+            if (loggedInUser) {
+                document.getElementById('loggedOutSection').style.display = 'none';
+                document.getElementById('loggedInSection').style.display = 'block';
+            } else {
+                document.getElementById('loggedOutSection').style.display = 'block';
+                document.getElementById('loggedInSection').style.display = 'none';
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('loggedInUser');
+            alert("ログアウトしました！");
+            checkLoginStatus();
+        }
     </script>
 </body>
 </html>

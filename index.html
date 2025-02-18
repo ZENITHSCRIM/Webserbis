@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>完全版リアルタイムTL</title>
+    <title>Webserbis</title>
+    <link rel="stylesheet" href="styles.css">
     <style>
         body { font-family: Arial, sans-serif; background: #f0f2f5; text-align: center; margin: 0; padding: 0; transition: background 0.3s, color 0.3s; }
         .container { max-width: 500px; margin: 20px auto; background: white; padding: 15px; border-radius: 10px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); }
@@ -28,23 +29,19 @@
         <div id="home" class="tab-content active">
             <h2>リアルタイムTL</h2>
             <input type="text" id="postInput" class="input" placeholder="いまどうしてる？">
+            <input type="file" id="fileInput" class="input">
             <button onclick="sendPost()" class="btn">投稿</button>
             <div class="timeline" id="timeline"></div>
         </div>
 
         <div id="settings" class="tab-content">
-        　  <h2>設定</h2>
-           <label>テーマカラー:</label>
-           <input type="color" id="themeColor" onchange="changeTheme()">
-           <label>誕生日:</label>
-　　　　　    <input type="date" id="birthDate" class="input">
-　　　　　    <button onclick="saveSettings()" class="btn">保存</button>
-　　　　　    <label>メールアドレス:</label>
-           <input type="email" id="emailAddress" class="input" placeholder="メールアドレスを入力">
-           <button onclick="sendVerificationEmail()" class="btn">認証メールを送信</button>
-           <input type="text" id="verificationCode" class="input" placeholder="認証コードを入力">
-   　　　　　 <button onclick="verifyEmailCode()" class="btn">認証コードを確認</button>
-　　　　　</div>
+            <h2>設定</h2>
+            <label>テーマカラー:</label>
+            <input type="color" id="themeColor" onchange="changeTheme()">
+            <label>誕生日:</label>
+            <input type="date" id="birthDate" class="input">
+            <button onclick="saveSettings()" class="btn">保存</button>
+        </div>
 
         <div id="account" class="tab-content">
             <h2>アカウント設定</h2>
@@ -59,8 +56,9 @@
             <div id="loggedInSection" style="display: none;">
                 <label>パスワード変更:</label>
                 <input type="password" id="newPassword" class="input" placeholder="新しいパスワードを入力">
-                <label>メールアドレス認証:</label>
-                <input type="email" id="email" class="input" placeholder="メールアドレスを入力">
+                <button onclick="changePassword()" class="btn">変更</button>
+                <label>アイコン設定:</label>
+                <input type="file" id="iconInput" class="input">
                 <button onclick="updateAccountSettings()" class="btn">更新</button>
                 <button id="logoutBtn" onclick="logout()" class="btn">ログアウト</button>
             </div>
@@ -81,31 +79,26 @@
 
         function sendPost() {
             let postInput = document.getElementById('postInput').value;
-            if (!postInput) return alert("投稿内容を入力してください。");
+            let fileInput = document.getElementById('fileInput').files[0];
+            if (!postInput && !fileInput) return alert("投稿内容かファイルを入力してください。");
             let timeline = document.getElementById('timeline');
             let postDiv = document.createElement('div');
             postDiv.className = 'post';
-            postDiv.innerHTML = `<p>${postInput}</p><button onclick="likePost(this)">👍</button><button onclick="rtPost(this)">🔁</button><button onclick="replyPost(this)">💬</button>`;
+            postDiv.innerHTML = `<p>${postInput}</p>`;
+            if (fileInput) {
+                let reader = new FileReader();
+                reader.onload = function(e) {
+                    let img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.style.maxWidth = '100%';
+                    postDiv.appendChild(img);
+                }
+                reader.readAsDataURL(fileInput);
+            }
+            postDiv.innerHTML += `<p>投稿者: ${getLoggedInUser().username}</p><img src="${getLoggedInUser().icon}" style="width: 30px; height: 30px;">`;
             timeline.prepend(postDiv);
             document.getElementById('postInput').value = "";
-        }
-
-        function likePost(button) {
-            alert("いいねしました！");
-        }
-
-        function rtPost(button) {
-            alert("リツイートしました！");
-        }
-
-        function replyPost(button) {
-            let reply = prompt("返信を入力してください");
-            if (reply) {
-                let replyDiv = document.createElement('div');
-                replyDiv.className = 'post';
-                replyDiv.innerHTML = `<p>返信: ${reply}</p>`;
-                button.parentElement.appendChild(replyDiv);
-            }
+            document.getElementById('fileInput').value = "";
         }
 
         function saveSettings() {
@@ -140,13 +133,12 @@
                 return alert("ユーザー名とパスワードを入力してください。");
             }
 
-            // ユーザー情報を保存する処理（例: ローカルストレージ）
             let users = JSON.parse(localStorage.getItem('users') || '[]');
             if (users.find(user => user.username === username)) {
                 return alert("このユーザー名は既に登録されています。");
             }
 
-            users.push({ username, password });
+            users.push({ username, password, icon: '' });
             localStorage.setItem('users', JSON.stringify(users));
             alert("アカウントを登録しました！");
             checkLoginStatus();
@@ -160,7 +152,6 @@
                 return alert("ユーザー名とパスワードを入力してください。");
             }
 
-            // ユーザー情報を確認する処理（例: ローカルストレージ）
             let users = JSON.parse(localStorage.getItem('users') || '[]');
             let user = users.find(user => user.username === username && user.password === password);
 
@@ -189,72 +180,39 @@
             alert("ログアウトしました！");
             checkLoginStatus();
         }
-        
+
+        function changePassword() {
+            let newPassword = document.getElementById('newPassword').value;
+            if (!newPassword) return alert("新しいパスワードを入力してください。");
+
+            let loggedInUser = getLoggedInUser();
+            let users = JSON.parse(localStorage.getItem('users'));
+            let userIndex = users.findIndex(user => user.username === loggedInUser.username);
+            users[userIndex].password = newPassword;
+            localStorage.setItem('users', JSON.stringify(users));
+            alert("パスワードが変更されました！");
+        }
+
+        function updateAccountSettings() {
+            let iconInput = document.getElementById('iconInput').files[0];
+            if (!iconInput) return alert("アイコンを選択してください。");
+
+            let reader = new FileReader();
+            reader.onload = function(e) {
+                let loggedInUser = getLoggedInUser();
+                let users = JSON.parse(localStorage.getItem('users'));
+                let userIndex = users.findIndex(user => user.username === loggedInUser.username);
+                users[userIndex].icon = e.target.result;
+                localStorage.setItem('users', JSON.stringify(users));
+                localStorage.setItem('loggedInUser', JSON.stringify(users[userIndex]));
+                alert("アイコンが更新されました！");
+            }
+            reader.readAsDataURL(iconInput);
+        }
+
+        function getLoggedInUser() {
+            return JSON.parse(localStorage.getItem('loggedInUser'));
+        }
     </script>
 </body>
 </html>
-
-<script>
-    function sendVerificationEmail() {
-        const email = document.getElementById('emailAddress').value;
-
-        fetch('/sendVerificationEmail', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ email })
-        })
-        .then(response => response.text())
-        .then(data => alert(data))
-        .catch(error => console.error('Error:', error));
-    }
-
-    function verifyEmailCode() {
-        const email = document.getElementById('emailAddress').value;
-        const code = document.getElementById('verificationCode').value;
-
-        fetch('/verifyEmailCode', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ email, code })
-        })
-        .then(response => response.text())
-        .then(data => alert(data))
-        .catch(error => console.error('Error:', error));
-    }
-</script>
-<script>
-    function sendVerificationEmail() {
-        const email = document.getElementById('emailAddress').value;
-
-        fetch('/sendVerificationEmail', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ email })
-        })
-        .then(response => response.text())
-        .then(data => alert(data))
-        .catch(error => console.error('Error:', error));
-    }
-
-    function verifyEmailCode() {
-        const email = document.getElementById('emailAddress').value;
-        const code = document.getElementById('verificationCode').value;
-
-        fetch('/verifyEmailCode', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ email, code })
-        })
-        .then(response => response.text())
-        .then(data => alert(data))
-        .catch(error => console.error('Error:', error));
-    }
-</script>

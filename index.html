@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>完全版リアルタイムTL</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f0f2f5; text-align: center; margin: 0; padding: 0; transition: background 0.3s, color 0.3s; }
+        .container { max-width: 500px; margin: 20px auto; background: white; padding: 15px; border-radius: 10px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); }
+        .tab-menu { display: flex; flex-direction: column; background: #1da1f2; color: white; padding: 10px; border-radius: 10px 10px 0 0; }
+        .tab-menu div { cursor: pointer; padding: 10px; text-align: center; border-bottom: 1px solid white; }
+        .tab-content { display: none; padding: 15px; }
+        .active { display: block; }
+        .input, .btn { width: 90%; padding: 8px; margin: 5px 0; border: 1px solid #ddd; border-radius: 5px; }
+        .btn { background: #1da1f2; color: white; cursor: pointer; }
+        .timeline { text-align: left; }
+        .post { background: #fff; padding: 10px; margin: 10px 0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="tab-menu">
+            <div onclick="switchTab('home')">🏠 ホーム</div>
+            <div onclick="switchTab('settings')">⚙ 設定</div>
+            <div onclick="switchTab('account')">👤 アカウント</div>
+        </div>
+
+        <div id="home" class="tab-content active">
+            <h2>リアルタイムTL</h2>
+            <input type="text" id="postInput" class="input" placeholder="いまどうしてる？">
+            <button onclick="sendPost()" class="btn">投稿</button>
+            <div class="timeline" id="timeline"></div>
+        </div>
+
+        <div id="settings" class="tab-content">
+            <h2>設定</h2>
+            <label>テーマカラー:</label>
+            <input type="color" id="themeColor" onchange="changeTheme()">
+            <label>誕生日:</label>
+            <input type="date" id="birthDate" class="input">
+            <button onclick="saveSettings()" class="btn">保存</button>
+        </div>
+
+        <div id="account" class="tab-content">
+            <h2>アカウント設定</h2>
+            <div id="loggedOutSection">
+                <label>ユーザー名:</label>
+                <input type="text" id="username" class="input" placeholder="ユーザー名を入力">
+                <label>パスワード:</label>
+                <input type="password" id="password" class="input" placeholder="パスワードを入力">
+                <button onclick="registerAccount()" class="btn">登録</button>
+                <button onclick="login()" class="btn">ログイン</button>
+            </div>
+            <div id="loggedInSection" style="display: none;">
+                <label>パスワード変更:</label>
+                <input type="password" id="newPassword" class="input" placeholder="新しいパスワードを入力">
+                <label>メールアドレス認証:</label>
+                <input type="email" id="email" class="input" placeholder="メールアドレスを入力">
+                <button onclick="updateAccountSettings()" class="btn">更新</button>
+                <button id="logoutBtn" onclick="logout()" class="btn">ログアウト</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.style.display = 'none');
+            document.getElementById(tabName).style.display = 'block';
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            switchTab('home');
+            checkLoginStatus();
+            loadSettings();
+        });
+
+        function sendPost() {
+            let postInput = document.getElementById('postInput').value;
+            if (!postInput) return alert("投稿内容を入力してください。");
+            let timeline = document.getElementById('timeline');
+            let postDiv = document.createElement('div');
+            postDiv.className = 'post';
+            postDiv.innerHTML = `<p>${postInput}</p><button onclick="likePost(this)">👍</button><button onclick="rtPost(this)">🔁</button><button onclick="replyPost(this)">💬</button>`;
+            timeline.prepend(postDiv);
+            document.getElementById('postInput').value = "";
+        }
+
+        function likePost(button) {
+            alert("いいねしました！");
+        }
+
+        function rtPost(button) {
+            alert("リツイートしました！");
+        }
+
+        function replyPost(button) {
+            let reply = prompt("返信を入力してください");
+            if (reply) {
+                let replyDiv = document.createElement('div');
+                replyDiv.className = 'post';
+                replyDiv.innerHTML = `<p>返信: ${reply}</p>`;
+                button.parentElement.appendChild(replyDiv);
+            }
+        }
+
+        function saveSettings() {
+            let themeColor = document.getElementById('themeColor').value;
+            let birthDate = document.getElementById('birthDate').value;
+            localStorage.setItem('settings', JSON.stringify({ themeColor, birthDate }));
+            applySettings();
+            alert("設定が保存されました！");
+        }
+
+        function loadSettings() {
+            let settings = JSON.parse(localStorage.getItem('settings'));
+            if (settings) {
+                document.getElementById('themeColor').value = settings.themeColor;
+                document.getElementById('birthDate').value = settings.birthDate;
+                applySettings();
+            }
+        }
+
+        function applySettings() {
+            let settings = JSON.parse(localStorage.getItem('settings'));
+            if (settings) {
+                document.body.style.background = settings.themeColor;
+            }
+        }
+    </script>
+</body>
+</html>
